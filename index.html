@@ -39,9 +39,18 @@
   }
   button,.tap{transition:transform .15s cubic-bezier(.34,1.56,.64,1),opacity .15s,background-color .18s,box-shadow .18s}
   button:active,.tap:active{transform:scale(.96);opacity:.9}
-  .screen{display:none;position:absolute;inset:0;flex-direction:column;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(96px + var(--safe-bot));background:transparent;max-width:520px;margin:0 auto}
-  .screen.active{display:flex;animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
-  @keyframes screenIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .screen{display:none;position:absolute;inset:0;flex-direction:column;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(96px + var(--safe-bot));background:transparent;max-width:520px;margin:0 auto;will-change:transform,opacity}
+  .screen.active{display:flex}
+  .screen.active.dir-right{animation:screenInRight .42s cubic-bezier(.22,.9,.25,1)}
+  .screen.active.dir-left{animation:screenInLeft .42s cubic-bezier(.22,.9,.25,1)}
+  .screen.active.dir-fade{animation:screenInFade .35s cubic-bezier(.2,.8,.2,1)}
+  @keyframes screenInRight{from{opacity:0;transform:translate3d(28px,0,0) scale(.985);filter:blur(4px)}to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
+  @keyframes screenInLeft{from{opacity:0;transform:translate3d(-28px,0,0) scale(.985);filter:blur(4px)}to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
+  @keyframes screenInFade{from{opacity:0;transform:translate3d(0,8px,0) scale(.99)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+  .nav-btn{transition:transform .25s cubic-bezier(.34,1.56,.64,1), background .3s ease, color .25s ease, box-shadow .3s ease}
+  .nav-btn:active{transform:scale(.92)}
+  .nav-btn.active{animation:navPop .45s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes navPop{0%{transform:scale(.9)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
 
   /* === TOP BAR (frosted glass like iOS 26) === */
   .top-bar{
@@ -456,7 +465,7 @@ const ADSGRAM_BLOCK_ID = '28642'; // <-- adsgram блок ID
 const COINS_PER_TON = 500000;
 const MIN_WITHDRAW = 10000;
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
-const AD_COOLDOWN = 60 * 1000;
+const AD_COOLDOWN = 15 * 1000;
 const AD_CLICK_BONUS_MS = 20000;
 const AD_CLICK_BONUS = 70;
 const AD_BASE_REWARD = 50;
@@ -645,14 +654,22 @@ async function addCoins(amount, source='bonus'){
 
 let toastTimer; function showToast(msg,type='info'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast '+type,2600); }
 
+const SCREEN_ORDER=['bonus','withdraw','ref','support'];
+let _currentScreen='bonus';
 function showScreen(name){
   haptic('light');
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const fromIdx=SCREEN_ORDER.indexOf(_currentScreen);
+  const toIdx=SCREEN_ORDER.indexOf(name);
+  let dirClass='dir-fade';
+  if(fromIdx>-1 && toIdx>-1 && fromIdx!==toIdx) dirClass = toIdx>fromIdx ? 'dir-right' : 'dir-left';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active','dir-right','dir-left','dir-fade'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  if(name==='bonus'){document.getElementById('bonusScreen').classList.add('active');document.getElementById('nav-bonus').classList.add('active');renderBonus();}
-  else if(name==='withdraw'){document.getElementById('withdrawScreen').classList.add('active');document.getElementById('nav-withdraw').classList.add('active');renderWithdraw();switchTab('new');}
-  else if(name==='ref'){document.getElementById('refScreen').classList.add('active');document.getElementById('nav-ref').classList.add('active');renderRef();}
-  else if(name==='support'){document.getElementById('supportScreen').classList.add('active');document.getElementById('nav-support').classList.add('active');}
+  const activate=(elId,navId,cb)=>{const el=document.getElementById(elId);el.classList.add('active',dirClass);document.getElementById(navId).classList.add('active');if(cb)cb();};
+  if(name==='bonus'){activate('bonusScreen','nav-bonus',renderBonus);}
+  else if(name==='withdraw'){activate('withdrawScreen','nav-withdraw',()=>{renderWithdraw();switchTab('new');});}
+  else if(name==='ref'){activate('refScreen','nav-ref',renderRef);}
+  else if(name==='support'){activate('supportScreen','nav-support');}
+  _currentScreen=name;
   updateCoinDisplays(); applyProfileUI();
 }
 
