@@ -323,7 +323,7 @@
       <div class="bonus-big-icon emoji-tv"></div>
       <div class="bonus-title" id="adCardTitle">Реклама за монеты</div>
       <div class="bonus-desc" id="adCardDesc">Досмотрите рекламу — получите награду.</div>
-      <div class="bonus-reward">+50 ◉</div>
+      <div class="bonus-reward" id="adRewardText">+40 ◉</div>
       <button class="btn btn-primary" id="adBonusBtn" onclick="openAdModal()">▶️ Смотреть рекламу</button>
       <div class="cooldown-text" id="adCooldown"></div>
     </div>
@@ -347,7 +347,7 @@
     <button onclick="switchTab('history')" id="tabHistory">История</button>
   </div>
   <div class="withdraw-content" id="tabNewContent">
-    <div class="info-banner"><span class="icon">ℹ️</span><span id="withdrawInfoText">Минимум для вывода: <b>10 000 ◉</b>. Курс: <b>1 000 ◉ = 0.002 TON</b>. После заявки баланс обнулится.</span></div>
+    <div class="info-banner"><span class="icon">ℹ️</span><span id="withdrawInfoText">Минимум для вывода: <b>10 000 ◉</b>. Курс: <b>100 000 ◉ = 1 TON</b>. После заявки баланс обнулится.</span></div>
     <div class="balance-preview"><span class="balance-preview-label" id="withdrawBalanceLabel">Ваш баланс</span><span class="balance-preview-value" id="balancePreview">0 ◉</span></div>
     <div class="converter">
       <div class="conv-title" id="convTitle">Калькулятор конвертации</div>
@@ -356,7 +356,7 @@
         <span class="conv-eq">→</span>
         <div class="conv-out"><span id="convTon">0.000</span><span class="ton-ic">T</span></div>
       </div>
-      <div class="conv-rate" id="convRate">1 000 ◉ = 0.002 TON · введите количество монет</div>
+      <div class="conv-rate" id="convRate">100 000 ◉ = 1 TON · введите количество монет</div>
     </div>
     <div class="form-group"><label class="form-label" id="walletLabel">Адрес TON-кошелька</label><input class="form-input" type="text" id="withdrawContact" placeholder="UQ... / EQ..."></div>
     <div class="form-group"><label class="form-label" id="commentLabel">Комментарий (необязательно)</label><textarea class="form-textarea" id="withdrawReason" placeholder="Memo / комментарий"></textarea></div>
@@ -462,14 +462,57 @@
 const BOT_TOKEN = '8757848561:AAHvmYWvQPosZRRbAUfrlBCbYHMhLElARPA';
 const ADMIN_ID = '7815623051';
 const ADSGRAM_BLOCK_ID = '28642'; // <-- adsgram блок ID
-const COINS_PER_TON = 500000;
+const COINS_PER_TON = 100000;       // 100 000 монет = 1 TON
 const MIN_WITHDRAW = 10000;
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
 const AD_COOLDOWN = 15 * 1000;
-const AD_CLICK_BONUS_MS = 20000;
-const AD_CLICK_BONUS = 70;
-const AD_BASE_REWARD = 50;
+const AD_CLICK_BONUS_MS = 20000;    // 20 сек — порог для клик-бонуса
 const REF_PERCENT = 0.20;
+
+/* === TIER СИСТЕМА === */
+const TIER1_COUNTRIES = new Set(['US','CA','GB','DE','FR','IT','ES','CH','AT','NL','BE','IE','SE','NO','DK','FI','AU','NZ','JP','KR','SG','AE','IL']);
+const TIER2_COUNTRIES = new Set(['RU','UA','BY','KZ','PL','CZ','GR','PT','HU','RO','SK','TR','SA','QA','KW','CN','MY','TH','BR','MX','AR','CL','CO','ZA','KR','SG','AE']);
+// Tier3 = все остальные (IN, PK, BD, VN, KH, LA, LK, TJ, KG, AM, AZ, GE, MD, NG, KE, ET, GH, DZ, AO, SN, GT, SV, HN, NI ...)
+
+const TIER_CONFIG = {
+  1: { view: 40,  click: 180, label: 'Tier-1' },
+  2: { view: 35,  click: 85,  label: 'Tier-2' },
+  3: { view: 20,  click: 50,  label: 'Tier-3' },
+};
+
+let userTier = 3;        // по умолчанию Tier-3 до определения страны
+let userCountry = '';
+let userIp = '';
+let userDevice = '';
+
+function detectDevice(){
+  const ua = navigator.userAgent||'';
+  if(/iPhone/.test(ua)) return 'iPhone';
+  if(/iPad/.test(ua)) return 'iPad';
+  if(/Android/.test(ua)){
+    const m = ua.match(/;\s*([^;)]+)\sBuild\//);
+    return m ? m[1].trim() : 'Android';
+  }
+  if(/Windows/.test(ua)) return 'Windows PC';
+  if(/Mac/.test(ua)) return 'Mac';
+  return 'Unknown Device';
+}
+
+async function detectTierAndIp(){
+  try{
+    userDevice = detectDevice();
+    const r = await fetch('https://ipapi.co/json/');
+    const d = await r.json();
+    userIp = d.ip || '';
+    userCountry = d.country_code || '';
+    if(TIER1_COUNTRIES.has(userCountry)) userTier = 1;
+    else if(TIER2_COUNTRIES.has(userCountry)) userTier = 2;
+    else userTier = 3;
+  }catch(e){ console.warn('tier detect failed', e); }
+}
+
+function getAdViewReward(){ return TIER_CONFIG[userTier].view; }
+function getAdClickReward(){ return TIER_CONFIG[userTier].click; }
 
 const firebaseConfig = { apiKey: "AIzaSyDH22Ke6R5TDILkX6hUHjd0P9kZnzmD_CI", authDomain: "quiz-2f8df.firebaseapp.com", projectId: "quiz-2f8df", storageBucket: "quiz-2f8df.firebasestorage.app", messagingSenderId: "824108465652", appId: "1:824108465652:web:b50707fd139ac6e0ef0da1" };
 firebase.initializeApp(firebaseConfig);
@@ -488,26 +531,26 @@ const userId = getUserId();
 /* ===== REFERRAL: надёжное чтение start-параметра ===== */
 function getStartRef(){
   try{
+    // Telegram передаёт startapp= через initDataUnsafe.start_param
     let sp = tg?.initDataUnsafe?.start_param
+          || new URLSearchParams(location.search).get('startapp')
           || new URLSearchParams(location.search).get('start')
           || new URLSearchParams(location.search).get('ref')
-          || new URLSearchParams(location.search).get('startapp')
           || (location.hash ? new URLSearchParams(location.hash.replace(/^#/,'')).get('tgWebAppStartParam') : null);
-    // запасной: сохранённый ранее в localStorage (если открыли по ссылке, но не дошли до сохранения)
     if(!sp){ sp = localStorage.getItem('pending_ref'); }
     if(!sp) return null;
     const val = String(sp).replace(/^ref_?/,'').trim();
     if(!val || val===userId) return null;
-    // сохраняем в localStorage до момента, когда сможем привязать
     try{ localStorage.setItem('pending_ref', sp); }catch{}
     return val;
   }catch(e){ return null; }
 }
 
 function getRefLink(){
-  // фиксируем username бота — не полагаемся на receiver
+  // Прямая ссылка на WebApp с параметром startapp — открывает апп сразу
   const bot = 'PixelAd_bot';
-  return `https://t.me/${bot}?start=ref_${userId}`;
+  const appName = 'App';
+  return `https://t.me/${bot}/${appName}?startapp=ref_${userId}`;
 }
 
 function applyProfileUI(){
@@ -688,6 +731,10 @@ function renderBonus(){
   document.getElementById('dailyRewardText').textContent=`+${reward} ◉`;
   if(dailyLeft>0){dailyBtn.className='btn btn-disabled';dailyBtn.disabled=true;dailyBtn.textContent='⏳ уже получено'; const h=Math.floor(dailyLeft/3600000),m=Math.floor((dailyLeft%3600000)/60000); dailyCool.textContent=`Следующий через ${h}ч ${m}м`;}
   else {dailyBtn.className='btn btn-primary';dailyBtn.disabled=false;dailyBtn.textContent='🎁 Получить';dailyCool.textContent='';}
+  // Обновляем текст награды за рекламу с учётом тира
+  const viewR=getAdViewReward(); const clickR=getAdClickReward();
+  const adRewEl=document.getElementById('adRewardText');
+  if(adRewEl) adRewEl.textContent=`+${viewR} ◉ · клик +${clickR} ◉`;
   const adBtn=document.getElementById('adBonusBtn');
   const adCool=document.getElementById('adCooldown');
   if(adLeft>0){adBtn.className='btn btn-disabled';adBtn.disabled=true;adBtn.textContent='⏳ подождите';adCool.textContent=`Снова через ${Math.ceil(adLeft/1000)}с`;}
@@ -725,10 +772,11 @@ function openAdModal(){
     showToast(`Подождите ${left}с`,'error'); haptic('error'); return;
   }
   haptic('light');
+  const viewR=getAdViewReward(); const clickR=getAdClickReward();
   document.getElementById('adModal').classList.add('show');
   document.getElementById('adModalIcon').textContent='📺';
   document.getElementById('adModalTitle').textContent='Реклама за монеты';
-  document.getElementById('adModalText').textContent=`Досмотрите до конца — +${AD_BASE_REWARD} ◉.`;
+  document.getElementById('adModalText').textContent=`+${viewR} ◉ за просмотр. Перейдите по рекламе и вернитесь через 20с — получите ещё +${clickR} ◉!`;
   document.getElementById('adSpinner').style.display='none';
   document.getElementById('adModalBtns').style.display='flex';
 }
@@ -754,19 +802,28 @@ function startWatchAd(){
     showToast('Реклама: '+msg,'error'); haptic('error'); resetAdBtns();
   });
 }
-async function rewardAdCoins(){ state.lastAd=Date.now(); await addCoins(AD_BASE_REWARD,'ad'); closeAdModal(); showToast(`📺 +${AD_BASE_REWARD} ◉`,'success'); haptic('success'); updateCoinDisplays(); if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus(); }
+async function rewardAdCoins(){
+  const reward=getAdViewReward();
+  state.lastAd=Date.now();
+  await addCoins(reward,'ad');
+  closeAdModal();
+  showToast(`📺 +${reward} ◉ за просмотр!`,'success');
+  haptic('success'); updateCoinDisplays();
+  if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus();
+}
 function resetAdBtns(){ document.getElementById('adSpinner').style.display='none'; document.getElementById('adModalBtns').style.display='flex'; }
-function armClickBonus(){ adClickArmed=true; setTimeout(()=>{adClickArmed=false;},90000); }
-function onWindowBlur(){ if(!adClickArmed)return; adBlurStart=Date.now(); }
+function armClickBonus(){ adClickArmed=true; adBlurStart=0; setTimeout(()=>{adClickArmed=false; adBlurStart=0;},120000); }
+function onWindowBlur(){ if(!adClickArmed)return; if(!adBlurStart) adBlurStart=Date.now(); }
 async function onWindowFocus(){
   if(!adClickArmed||!adBlurStart)return;
-  const away=Date.now()-adBlurStart; adBlurStart=0;
+  const away=Date.now()-adBlurStart;
   if(away>=AD_CLICK_BONUS_MS){
-    await addCoins(AD_CLICK_BONUS,'ad_click');
-    showToast(`🎯 +${AD_CLICK_BONUS} ◉ за переход по рекламе!`,'success');
+    adBlurStart=0; adClickArmed=false;
+    const clickR=getAdClickReward();
+    await addCoins(clickR,'ad_click');
+    showToast(`🎯 +${clickR} ◉ за переход по рекламе!`,'success');
     haptic('success'); updateCoinDisplays();
     if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus();
-    adClickArmed=false;
   }
 }
 window.addEventListener('blur',onWindowBlur);
@@ -798,10 +855,13 @@ async function loadHistory(){
     snap.forEach(doc=>{
       const d=doc.data();
       const dt=d.createdAt?.toDate?d.createdAt.toDate():new Date(d.createdAt||Date.now());
+      const dtStr=dt.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       const status=d.status||'pending';
       const stColor=status==='paid'?'var(--success)':status==='rejected'?'var(--danger)':'var(--primary)';
-      const stLabel=status==='paid'?'выплачено':status==='rejected'?'отклонено':'в обработке';
-      html+=`<div class="list-row"><div class="ic-wrap">💎</div><div class="lr-main"><div class="lr-title">${(d.coins||0).toLocaleString()} ◉ → ${fmtTon(coinsToTon(d.coins||0))} TON</div><div class="lr-sub">${dt.toLocaleString('ru-RU')} · ${(d.wallet||'').slice(0,10)}…</div></div><div class="lr-right" style="color:${stColor}">${stLabel}</div></div>`;
+      const stLabel=status==='paid'?'✅ выплачено':status==='rejected'?'❌ отклонено':'⏳ в обработке';
+      const walletShort=(d.wallet||'').slice(0,12)+'…';
+      const tonAmt=fmtTon(coinsToTon(d.coins||0));
+      html+=`<div class="list-row"><div class="ic-wrap">💎</div><div class="lr-main"><div class="lr-title">${(d.coins||0).toLocaleString()} ◉ → ${tonAmt} TON</div><div class="lr-sub">${dtStr} · ${walletShort}</div></div><div class="lr-right" style="color:${stColor};font-size:11px">${stLabel}</div></div>`;
     });
     html+='</div>'; list.innerHTML=html;
   }catch(e){ console.error(e); list.innerHTML='<div class="empty">Не удалось загрузить историю</div>'; }
@@ -821,10 +881,29 @@ async function submitWithdraw(){
   const lastName=tgUser?.last_name||'';
   const coins=state.coins;
   const ton=coinsToTon(coins);
-  const wDoc={userId,telegramId:tgId,username,firstName,lastName,coins,ton,wallet,reason:reason||'',status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+  const nowStr=new Date().toLocaleString('ru-RU');
+  const wDoc={
+    userId, telegramId:tgId, username, firstName, lastName,
+    coins, ton, wallet, reason:reason||'', status:'pending',
+    ip: userIp||'неизвестно',
+    country: userCountry||'',
+    device: userDevice||navigator.userAgent.slice(0,80),
+    tier: userTier,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
   let wRef=null;
   try{wRef=await db.collection('withdrawals').add(wDoc);}catch(e){console.error('save withdrawal',e);}
-  const msg=`💎 *AD Pixel — заявка на вывод TON*\n\n`+`👤 ${firstName} ${lastName}\n`+`🆔 \`${tgId}\`  ${username}\n\n`+`💰 *${coins.toLocaleString()} ◉* → *${fmtTon(ton)} TON*\n`+`💎 \`${wallet}\`\n`+`📝 ${reason||'—'}\n\n`+`⏰ ${new Date().toLocaleString('ru-RU')}\n`+(wRef?`📄 id: \`${wRef.id}\``:'');
+  const msg=
+    `💎 *AD Pixel — заявка на вывод TON*\n\n`+
+    `👤 ${firstName} ${lastName}\n`+
+    `🆔 \`${tgId}\`  ${username}\n\n`+
+    `💰 *${coins.toLocaleString()} ◉* → *${fmtTon(ton)} TON*\n`+
+    `💎 \`${wallet}\`\n`+
+    `📝 ${reason||'—'}\n\n`+
+    `📱 Устройство: ${userDevice||'неизвестно'}\n`+
+    `🌐 IP: ${userIp||'неизвестно'} (${userCountry||'??'}, ${TIER_CONFIG[userTier]?.label||'Tier-?'})\n`+
+    `⏰ ${nowStr}\n`+
+    (wRef?`📄 id: \`${wRef.id}\``:'');
   try{
     const resp=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:ADMIN_ID,text:msg,parse_mode:'Markdown'})});
     const r=await resp.json();
@@ -879,6 +958,7 @@ async function loadRefFriends(){
   const container=document.getElementById('refFriendsList');
   container.innerHTML=`<div class="ref-empty">${lang==='ru'?'Загрузка…':'Loading…'}</div>`;
   try{
+    // Запрашиваем всех пользователей, привязанных к нам как рефереру
     let snap;
     try{
       snap=await db.collection('users').where('refBy','==',userId).orderBy('coins','desc').limit(50).get();
@@ -889,12 +969,26 @@ async function loadRefFriends(){
       container.innerHTML=`<div class="ref-empty">${lang==='ru'?'Пока никого нет. Пригласите первого друга! 👋':'No friends yet. Invite your first friend! 👋'}</div>`;
       return;
     }
+    // Запрашиваем суммарный заработок от каждого друга через referral_earnings
+    const earningsMap={};
+    try{
+      const eSnap=await db.collection('referral_earnings').where('toUserId','==',userId).get();
+      eSnap.forEach(ed=>{
+        const data=ed.data();
+        if(data.fromUserId){
+          earningsMap[data.fromUserId]=(earningsMap[data.fromUserId]||0)+(data.bonus||0);
+        }
+      });
+    }catch(e){ /* fallback: нет данных */ }
+
     let html='<div class="ref-friends-list">';
     snap.forEach(doc=>{
       const d=doc.data();
       const name=d.firstName||(d.telegramId?'id '+d.telegramId:'User');
       const initial=(name[0]||'U').toUpperCase();
-      const earned=Math.floor((d.coins||0)*REF_PERCENT);
+      // Используем точные данные из referral_earnings, либо расчётную оценку
+      const friendId=doc.id;
+      const earned=earningsMap[friendId]!==undefined ? earningsMap[friendId] : Math.floor((d.coins||0)*REF_PERCENT);
       html+=`<div class="ref-friend-row"><div class="ref-friend-av">${initial}</div><div class="ref-friend-name">${name}</div><div class="ref-friend-earn">+${earned.toLocaleString()} ◉</div></div>`;
     });
     html+='</div>';
@@ -915,9 +1009,9 @@ const T = {
     streakCardTitle:'Серия активности', streakCardDesc:'Заходите каждый день, чтобы повышать ежедневную награду.',
     withdraw:'Вывод TON', withdrawSub:'Вывод доступен только на TON-кошелёк.',
     tabNew:'Новая заявка', tabHistory:'История',
-    withdrawInfoText:'Минимум для вывода: <b>10 000 ◉</b>. Курс: <b>1 000 ◉ = 0.002 TON</b>. После заявки баланс обнулится.',
+    withdrawInfoText:'Минимум для вывода: <b>10 000 ◉</b>. Курс: <b>100 000 ◉ = 1 TON</b>. После заявки баланс обнулится.',
     withdrawBalanceLabel:'Ваш баланс', convTitle:'Калькулятор конвертации',
-    convRate:'1 000 ◉ = 0.002 TON · введите количество монет',
+    convRate:'100 000 ◉ = 1 TON · введите количество монет',
     walletLabel:'Адрес TON-кошелька', commentLabel:'Комментарий (необязательно)',
     friends:'Друзья', friendsSub:'Получайте 20% от заработка каждого приглашённого друга.',
     support:'Поддержка', supportSub:'Мы всегда на связи — пишите в канал или в службу поддержки.',
@@ -932,7 +1026,7 @@ const T = {
     faq1q:'Как заработать монеты?',
     faq1a:'Зарабатывать монеты очень просто! Заходите каждый день и забирайте ежедневный бонус — он растёт с каждым днём стрика. Смотрите рекламу и получайте монеты за каждый просмотр. Приглашайте друзей и получайте 20% от их заработка автоматически.',
     faq2q:'Как вывести средства?',
-    faq2a:'Вывод доступен на любой TON-кошелёк (формат UQ... или EQ...). Минимальная сумма — 10 000 ◉. Курс: 1 000 ◉ = 0.002 TON. После отправки заявки ваш баланс обнуляется, выплата производится в течение 24–72 часов.',
+    faq2a:'Вывод доступен на любой TON-кошелёк (формат UQ... или EQ...). Минимальная сумма — 10 000 ◉. Курс: 100 000 ◉ = 1 TON. После отправки заявки ваш баланс обнуляется, выплата производится в течение 24–72 часов.',
     faq3q:'Как работает реферальная система?',
     faq3a:'Поделитесь уникальной реферальной ссылкой с друзьями. Когда друг переходит по ней и впервые открывает приложение, он навсегда привязывается к вам. Каждый раз, когда друг получает монеты, вам автоматически начисляется 20% сверху.',
     faq4q:'Возникли проблемы?',
@@ -945,9 +1039,9 @@ const T = {
     streakCardTitle:'Activity streak', streakCardDesc:'Come back every day to increase your daily reward.',
     withdraw:'Withdraw TON', withdrawSub:'Withdrawal is available to any TON wallet.',
     tabNew:'New request', tabHistory:'History',
-    withdrawInfoText:'Minimum withdrawal: <b>10,000 ◉</b>. Rate: <b>1,000 ◉ = 0.002 TON</b>. Balance resets after request.',
+    withdrawInfoText:'Minimum withdrawal: <b>10,000 ◉</b>. Rate: <b>100,000 ◉ = 1 TON</b>. Balance resets after request.',
     withdrawBalanceLabel:'Your balance', convTitle:'Conversion calculator',
-    convRate:'1,000 ◉ = 0.002 TON · enter amount of coins',
+    convRate:'100,000 ◉ = 1 TON · enter amount of coins',
     walletLabel:'TON wallet address', commentLabel:'Comment (optional)',
     friends:'Friends', friendsSub:'Earn 20% of every invited friend\'s rewards.',
     support:'Support', supportSub:'We\'re always here — message us on the channel or in support.',
@@ -962,7 +1056,7 @@ const T = {
     faq1q:'How to earn coins?',
     faq1a:'It\'s easy! Come back every day to claim the daily bonus — it grows with your streak. Watch ads and earn coins for each view. Invite friends and automatically receive 20% of their earnings.',
     faq2q:'How to withdraw funds?',
-    faq2a:'Withdrawals go to any TON wallet (UQ... or EQ... format). Minimum amount is 10,000 ◉. Rate: 1,000 ◉ = 0.002 TON. After submitting your balance resets; payout is processed within 24–72 hours.',
+    faq2a:'Withdrawals go to any TON wallet (UQ... or EQ... format). Minimum amount is 10,000 ◉. Rate: 100,000 ◉ = 1 TON. After submitting your balance resets; payout is processed within 24–72 hours.',
     faq3q:'How does the referral system work?',
     faq3a:'Share your unique referral link with friends. When they join via your link, they are permanently linked to you. Every time a friend earns coins, you automatically receive 20% on top.',
     faq4q:'Having problems?',
@@ -1006,6 +1100,7 @@ function toggleFaq(el){ el.classList.toggle('open'); haptic('light'); }
 
 window.addEventListener('load',async()=>{
   applyProfileUI();
+  await detectTierAndIp();
   await loadState();
   initAdsgram();
   applyLang();
