@@ -475,9 +475,9 @@ const TIER2_COUNTRIES = new Set(['RU','UA','BY','KZ','PL','CZ','GR','PT','HU','R
 // Tier3 = все остальные (IN, PK, BD, VN, KH, LA, LK, TJ, KG, AM, AZ, GE, MD, NG, KE, ET, GH, DZ, AO, SN, GT, SV, HN, NI ...)
 
 const TIER_CONFIG = {
-  1: { view: 40,  click: 180, label: 'Tier-1' },
-  2: { view: 35,  click: 85,  label: 'Tier-2' },
-  3: { view: 20,  click: 50,  label: 'Tier-3' },
+  1: { view: 50,  click: 100, label: 'Tier-1' },
+  2: { view: 40,  click: 80,  label: 'Tier-2' },
+  3: { view: 40,  click: 80,  label: 'Tier-3' },
 };
 
 let userTier = 3;        // по умолчанию Tier-3 до определения страны
@@ -767,7 +767,7 @@ function renderBonus(){
   // Обновляем текст награды за рекламу с учётом тира
   const viewR=getAdViewReward(); const clickR=getAdClickReward();
   const adRewEl=document.getElementById('adRewardText');
-  if(adRewEl) adRewEl.textContent=`+${viewR} ◉ · клик +${clickR} ◉`;
+  if(adRewEl) adRewEl.textContent=`+${viewR} ◉`;
   const adBtn=document.getElementById('adBonusBtn');
   const adCool=document.getElementById('adCooldown');
   if(adLeft>0){adBtn.className='btn btn-disabled';adBtn.disabled=true;adBtn.textContent='⏳ подождите';adCool.textContent=`Снова через ${Math.ceil(adLeft/1000)}с`;}
@@ -797,6 +797,33 @@ function initAdsgram(){
       console.warn('Adsgram SDK not loaded or blockId missing');
     }
   }catch(e){console.warn('Adsgram init failed',e);}
+  // Восстанавливаем состояние click bonus после возможного перезахода в приложение
+  try{
+    const armedUntil=parseInt(localStorage.getItem('ad_click_armed')||'0',10);
+    const savedBlur=parseInt(localStorage.getItem('ad_blur_start')||'0',10);
+    if(armedUntil>Date.now() && savedBlur){
+      const away=Date.now()-savedBlur;
+      if(away>=AD_CLICK_BONUS_MS){
+        // Человек ушёл на 20+ сек и вернулся — начисляем
+        adClickArmed=false;
+        localStorage.removeItem('ad_click_armed');
+        localStorage.removeItem('ad_blur_start');
+        const clickR=getAdClickReward();
+        addCoins(clickR,'ad_click').then(()=>{
+          showToast(`🎯 +${clickR} ◉`,'success');
+          haptic('success'); updateCoinDisplays();
+          if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus();
+        });
+      } else {
+        adClickArmed=true;
+        adBlurStart=0;
+        localStorage.removeItem('ad_blur_start');
+      }
+    } else {
+      localStorage.removeItem('ad_click_armed');
+      localStorage.removeItem('ad_blur_start');
+    }
+  }catch(e){}
 }
 function openAdModal(){
   const now=Date.now();
@@ -809,7 +836,7 @@ function openAdModal(){
   document.getElementById('adModal').classList.add('show');
   document.getElementById('adModalIcon').textContent='📺';
   document.getElementById('adModalTitle').textContent='Реклама за монеты';
-  document.getElementById('adModalText').textContent=`+${viewR} ◉ за просмотр. Перейдите по рекламе и вернитесь через 20с — получите ещё +${clickR} ◉!`;
+  document.getElementById('adModalText').textContent=`Посмотрите рекламу до конца — получите +${viewR} ◉.`;
   document.getElementById('adSpinner').style.display='none';
   document.getElementById('adModalBtns').style.display='flex';
 }
@@ -845,16 +872,27 @@ async function rewardAdCoins(){
   if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus();
 }
 function resetAdBtns(){ document.getElementById('adSpinner').style.display='none'; document.getElementById('adModalBtns').style.display='flex'; }
-function armClickBonus(){ adClickArmed=true; adBlurStart=0; setTimeout(()=>{adClickArmed=false; adBlurStart=0;},120000); }
-function onWindowBlur(){ if(!adClickArmed)return; if(!adBlurStart) adBlurStart=Date.now(); }
+function armClickBonus(){ 
+  adClickArmed=true; adBlurStart=0; 
+  try{ localStorage.setItem('ad_click_armed', String(Date.now()+120000)); localStorage.removeItem('ad_blur_start'); }catch{}
+  setTimeout(()=>{ adClickArmed=false; adBlurStart=0; try{ localStorage.removeItem('ad_click_armed'); localStorage.removeItem('ad_blur_start'); }catch{}; },120000); 
+}
+function onWindowBlur(){ 
+  if(!adClickArmed)return; 
+  adBlurStart=Date.now(); // всегда обновляем время ухода
+  try{ localStorage.setItem('ad_blur_start', String(adBlurStart)); }catch{}
+}
 async function onWindowFocus(){
   if(!adClickArmed||!adBlurStart)return;
   const away=Date.now()-adBlurStart;
+  adBlurStart=0;
+  try{ localStorage.removeItem('ad_blur_start'); }catch{}
   if(away>=AD_CLICK_BONUS_MS){
-    adBlurStart=0; adClickArmed=false;
+    adClickArmed=false;
+    try{ localStorage.removeItem('ad_click_armed'); }catch{}
     const clickR=getAdClickReward();
     await addCoins(clickR,'ad_click');
-    showToast(`🎯 +${clickR} ◉ за переход по рекламе!`,'success');
+    showToast(`🎯 +${clickR} ◉`,'success');
     haptic('success'); updateCoinDisplays();
     if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus();
   }
@@ -887,11 +925,13 @@ async function loadHistory(){
   const list=document.getElementById('historyList');
   list.innerHTML='<div class="empty">Загрузка…</div>';
   try{
-    const snap=await db.collection('withdrawals').where('userId','==',userId).orderBy('createdAt','desc').limit(30).get();
+    const snap=await db.collection('withdrawals').where('userId','==',userId).limit(50).get();
     if(snap.empty){list.innerHTML='<div class="empty">Заявок пока нет</div>';return;}
+    const docs=[];
+    snap.forEach(doc=>docs.push({id:doc.id,...doc.data()}));
+    docs.sort((a,b)=>{ const ta=a.createdAt?.toMillis?a.createdAt.toMillis():(a.createdAt?.seconds?a.createdAt.seconds*1000:0); const tb=b.createdAt?.toMillis?b.createdAt.toMillis():(b.createdAt?.seconds?b.createdAt.seconds*1000:0); return tb-ta; });
     let html='<div class="list" style="display:flex;flex-direction:column;gap:10px">';
-    snap.forEach(doc=>{
-      const d=doc.data();
+    docs.forEach(d=>{
       const dt=d.createdAt?.toDate?d.createdAt.toDate():new Date(d.createdAt||Date.now());
       const dtStr=dt.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       const status=d.status||'pending';
@@ -971,6 +1011,7 @@ async function submitWithdraw(){
     showToast('✅ Заявка отправлена','success'); haptic('success');
     document.getElementById('withdrawContact').value=''; document.getElementById('withdrawReason').value=''; document.getElementById('convCoins').value='';
     renderWithdraw(); updateCoinDisplays();
+    switchTab('history');
   }catch(e){
     console.error(e); showToast('Ошибка отправки. Попробуйте снова','error'); haptic('error');
     btn.className='btn btn-success'; btn.disabled=false; btn.textContent='💎 Отправить заявку';
