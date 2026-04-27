@@ -683,20 +683,49 @@ async function addCoins(amount, source='bonus'){
   if(state.refBy){
     const refBonus=Math.floor(amount*REF_PERCENT);
     if(refBonus>0){
+      // 1) Пишем запись о начислении (это даёт fallback автоначисление через syncRefEarnings)
       try{
-        await db.collection('users').doc(state.refBy).set({
-          coins: firebase.firestore.FieldValue.increment(refBonus),
-          refEarned: firebase.firestore.FieldValue.increment(refBonus)
-        }, {merge:true});
         await db.collection('referral_earnings').add({
           fromUserId:userId,
           toUserId:state.refBy,
           source, baseAmount:amount, bonus:refBonus,
           createdAt:firebase.firestore.FieldValue.serverTimestamp()
         });
-      }catch(e){console.error('ref bonus',e);}
+      }catch(e){console.error('ref earnings log',e);}
+      // 2) Пытаемся напрямую обновить документ реферера (может быть запрещено rules — это ок,
+      //    реферер всё равно получит монеты при следующем заходе через syncRefEarnings)
+      try{
+        await db.collection('users').doc(state.refBy).set({
+          coins: firebase.firestore.FieldValue.increment(refBonus),
+          refEarned: firebase.firestore.FieldValue.increment(refBonus)
+        }, {merge:true});
+      }catch(e){ /* тихо: подхватится sync'ом у реферера */ }
     }
   }
+}
+
+/* ===== Авто-синхронизация дохода с друзей (надёжное автоначисление) =====
+   Считает суммарные начисления из referral_earnings и докидывает разницу на баланс
+   текущего пользователя. Безопасно: пишем только в свой документ.
+   Возвращает {credited, totalRefEarned}. */
+async function syncRefEarnings(silent=true){
+  if(!db||!userId) return {credited:0,totalRefEarned:state.refEarned||0};
+  try{
+    const eSnap=await db.collection('referral_earnings').where('toUserId','==',userId).get();
+    let totalRefEarned=0;
+    eSnap.forEach(ed=>{ totalRefEarned+=(ed.data().bonus||0); });
+    const prev=state.refEarned||0;
+    if(totalRefEarned>prev){
+      const diff=totalRefEarned-prev;
+      state.refEarned=totalRefEarned;
+      state.coins=(state.coins||0)+diff;
+      await saveState();
+      updateCoinDisplays();
+      if(!silent){ showToast(`+${diff.toLocaleString()} ◉ от друзей`,'success'); haptic('success'); }
+      return {credited:diff,totalRefEarned};
+    }
+    return {credited:0,totalRefEarned};
+  }catch(e){ console.warn('syncRefEarnings',e); return {credited:0,totalRefEarned:state.refEarned||0}; }
 }
 
 let toastTimer; function showToast(msg,type='info'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast '+type,2600); }
@@ -712,10 +741,10 @@ function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active','dir-right','dir-left','dir-fade'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const activate=(elId,navId,cb)=>{const el=document.getElementById(elId);el.classList.add('active',dirClass);document.getElementById(navId).classList.add('active');if(cb)cb();};
-  if(name==='bonus'){activate('bonusScreen','nav-bonus',renderBonus);}
-  else if(name==='withdraw'){activate('withdrawScreen','nav-withdraw',()=>{renderWithdraw();switchTab('new');});}
+  if(name==='bonus'){activate('bonusScreen','nav-bonus',()=>{renderBonus(); syncRefEarnings(false).then(r=>{ if(r.credited) renderBonus(); });});}
+  else if(name==='withdraw'){activate('withdrawScreen','nav-withdraw',()=>{renderWithdraw();switchTab('new'); syncRefEarnings(false).then(r=>{ if(r.credited) renderWithdraw(); });});}
   else if(name==='ref'){activate('refScreen','nav-ref',renderRef);}
-  else if(name==='support'){activate('supportScreen','nav-support');}
+  else if(name==='support'){activate('supportScreen','nav-support',()=>{ syncRefEarnings(true); });}
   _currentScreen=name;
   updateCoinDisplays(); applyProfileUI();
 }
@@ -849,23 +878,49 @@ function renderWithdraw(){
 function recalcConv(){ const v=parseInt(document.getElementById('convCoins').value||'0',10); document.getElementById('convTon').textContent=fmtTon(coinsToTon(Math.max(0,v))); }
 document.addEventListener('input',e=>{ if(e.target&&e.target.id==='convCoins')recalcConv(); });
 
+function copyWalletAddr(addr){
+  try{ navigator.clipboard?.writeText(addr); showToast('Адрес скопирован','success'); haptic('success'); }catch(e){}
+}
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 async function loadHistory(){
   const list=document.getElementById('historyList');
   list.innerHTML='<div class="empty">Загрузка…</div>';
   try{
     const snap=await db.collection('withdrawals').where('userId','==',userId).orderBy('createdAt','desc').limit(30).get();
     if(snap.empty){list.innerHTML='<div class="empty">Заявок пока нет</div>';return;}
-    let html='<div class="list">';
+    let html='<div class="list" style="display:flex;flex-direction:column;gap:10px">';
     snap.forEach(doc=>{
       const d=doc.data();
       const dt=d.createdAt?.toDate?d.createdAt.toDate():new Date(d.createdAt||Date.now());
       const dtStr=dt.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       const status=d.status||'pending';
       const stColor=status==='paid'?'var(--success)':status==='rejected'?'var(--danger)':'var(--primary)';
+      const stBg = status==='paid' ? 'rgba(52,199,89,.12)' : status==='rejected' ? 'rgba(255,59,48,.12)' : 'rgba(0,122,255,.12)';
       const stLabel=status==='paid'?'✅ выплачено':status==='rejected'?'❌ отклонено':'⏳ в обработке';
-      const walletShort=(d.wallet||'').slice(0,12)+'…';
+      const wallet=d.wallet||'';
+      const walletMid = wallet.length>16 ? wallet.slice(0,8)+'…'+wallet.slice(-6) : wallet;
       const tonAmt=fmtTon(coinsToTon(d.coins||0));
-      html+=`<div class="list-row"><div class="ic-wrap">💎</div><div class="lr-main"><div class="lr-title">${(d.coins||0).toLocaleString()} ◉ → ${tonAmt} TON</div><div class="lr-sub">${dtStr} · ${walletShort}</div></div><div class="lr-right" style="color:${stColor};font-size:11px">${stLabel}</div></div>`;
+      const comment = d.reason ? `<div style="font-size:12px;color:var(--text-2);margin-top:6px">📝 ${escapeHtml(d.reason)}</div>` : '';
+      html+=`
+        <div style="background:var(--card-strong);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <div class="ic-wrap" style="flex:none">💎</div>
+              <div style="min-width:0">
+                <div style="font-weight:800;font-size:15px;color:var(--text);white-space:nowrap">${(d.coins||0).toLocaleString()} ◉ → ${tonAmt} TON</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">${dtStr}</div>
+              </div>
+            </div>
+            <div style="flex:none;color:${stColor};background:${stBg};font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;white-space:nowrap">${stLabel}</div>
+          </div>
+          <div onclick="copyWalletAddr('${wallet.replace(/'/g,"\\'")}')" class="tap" style="display:flex;align-items:center;gap:8px;background:var(--primary-soft);border:1px solid var(--border);border-radius:12px;padding:8px 10px;cursor:pointer">
+            <span style="font-size:13px;color:var(--ton);font-weight:700">TON</span>
+            <span style="font-family:'SF Mono',Menlo,monospace;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" title="${escapeHtml(wallet)}">${escapeHtml(walletMid)}</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:700">копир.</span>
+          </div>
+          ${comment}
+        </div>`;
     });
     html+='</div>'; list.innerHTML=html;
   }catch(e){ console.error(e); list.innerHTML='<div class="empty">Не удалось загрузить историю</div>'; }
@@ -935,19 +990,8 @@ async function renderRef(){
     }
   }catch(e){console.warn('refresh ref stats',e);}
 
-  // Сверяем реальный заработок через referral_earnings и кредитуем разницу в СВОЙ документ
-  // (обход возможных ограничений Firestore rules на запись в чужой документ)
-  try{
-    const eSnap=await db.collection('referral_earnings').where('toUserId','==',userId).get();
-    let totalRefEarned=0;
-    eSnap.forEach(ed=>{ totalRefEarned+=(ed.data().bonus||0); });
-    if(totalRefEarned>state.refEarned){
-      const diff=totalRefEarned-state.refEarned;
-      state.refEarned=totalRefEarned;
-      state.coins+=diff;
-      await saveState(); // пишем только в свой документ — всегда разрешено
-    }
-  }catch(e){console.warn('sync refEarned',e);}
+  // Авто-синхронизация дохода с друзей (общая функция, надёжно)
+  await syncRefEarnings(false);
 
   document.getElementById('refCount').textContent=state.refCount.toLocaleString();
   document.getElementById('refEarned').textContent=state.refEarned.toLocaleString()+' ◉';
@@ -1124,6 +1168,9 @@ window.addEventListener('load',async()=>{
   initAdsgram();
   applyLang();
   showScreen('bonus');
+  // Авто-начисление дохода с друзей при старте + фоном раз в 30с
+  syncRefEarnings(false);
+  setInterval(()=>{ syncRefEarnings(true); }, 30000);
   setInterval(()=>{ if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus(); },1000);
 });
 </script>
