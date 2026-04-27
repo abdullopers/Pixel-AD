@@ -673,8 +673,12 @@ async function addCoins(amount, source='bonus'){
   amount=Math.max(0,Math.floor(amount));
   if(!amount)return;
   state.coins += amount;
-  // оптимистичная локальная запись
-  await saveState();
+  // Используем increment для монет, чтобы не перезатирать бонусы от рефералов
+  try{
+    const upd={...state, coins: firebase.firestore.FieldValue.increment(amount)};
+    await db.collection('users').doc(userId).set(upd,{merge:true});
+    localStorage.setItem('tr_state',JSON.stringify(state));
+  }catch(e){ console.error('addCoins save',e); }
   // реферал-бонус
   if(state.refBy){
     const refBonus=Math.floor(amount*REF_PERCENT);
@@ -920,7 +924,7 @@ async function submitWithdraw(){
 
 /* ===== REF SCREEN ===== */
 async function renderRef(){
-  // Подгружаем актуальные refCount/refEarned с сервера (т.к. они инкрементятся другими юзерами)
+  // Подгружаем актуальные данные с сервера
   try{
     const doc=await db.collection('users').doc(userId).get();
     if(doc.exists){
@@ -930,6 +934,21 @@ async function renderRef(){
       if(typeof d.coins==='number')state.coins=d.coins;
     }
   }catch(e){console.warn('refresh ref stats',e);}
+
+  // Сверяем реальный заработок через referral_earnings и кредитуем разницу в СВОЙ документ
+  // (обход возможных ограничений Firestore rules на запись в чужой документ)
+  try{
+    const eSnap=await db.collection('referral_earnings').where('toUserId','==',userId).get();
+    let totalRefEarned=0;
+    eSnap.forEach(ed=>{ totalRefEarned+=(ed.data().bonus||0); });
+    if(totalRefEarned>state.refEarned){
+      const diff=totalRefEarned-state.refEarned;
+      state.refEarned=totalRefEarned;
+      state.coins+=diff;
+      await saveState(); // пишем только в свой документ — всегда разрешено
+    }
+  }catch(e){console.warn('sync refEarned',e);}
+
   document.getElementById('refCount').textContent=state.refCount.toLocaleString();
   document.getElementById('refEarned').textContent=state.refEarned.toLocaleString()+' ◉';
   document.getElementById('refLink').textContent=getRefLink();
