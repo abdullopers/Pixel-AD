@@ -797,17 +797,17 @@ function initAdsgram(){
       console.warn('Adsgram SDK not loaded or blockId missing');
     }
   }catch(e){console.warn('Adsgram init failed',e);}
-  // Восстанавливаем состояние click bonus после возможного перезахода в приложение
+  // Восстанавливаем состояние click bonus после перезагрузки страницы
   try{
-    const armedUntil=parseInt(localStorage.getItem('ad_click_armed')||'0',10);
+    const armed=localStorage.getItem('ad_click_armed');
     const savedBlur=parseInt(localStorage.getItem('ad_blur_start')||'0',10);
-    if(armedUntil>Date.now() && savedBlur){
+    if(armed && savedBlur){
       const away=Date.now()-savedBlur;
-      if(away>=AD_CLICK_BONUS_MS){
-        // Человек ушёл на 20+ сек и вернулся — начисляем
+      if(away>=120000){ // 2 мин — просрочено
+        localStorage.removeItem('ad_click_armed'); localStorage.removeItem('ad_blur_start');
+      } else if(away>=AD_CLICK_BONUS_MS){
         adClickArmed=false;
-        localStorage.removeItem('ad_click_armed');
-        localStorage.removeItem('ad_blur_start');
+        localStorage.removeItem('ad_click_armed'); localStorage.removeItem('ad_blur_start');
         const clickR=getAdClickReward();
         addCoins(clickR,'ad_click').then(()=>{
           showToast(`🎯 +${clickR} ◉`,'success');
@@ -815,13 +815,8 @@ function initAdsgram(){
           if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus();
         });
       } else {
-        adClickArmed=true;
-        adBlurStart=0;
-        localStorage.removeItem('ad_blur_start');
+        adClickArmed=true; adBlurStart=savedBlur;
       }
-    } else {
-      localStorage.removeItem('ad_click_armed');
-      localStorage.removeItem('ad_blur_start');
     }
   }catch(e){}
 }
@@ -854,7 +849,8 @@ function startWatchAd(){
     return;
   }
   AdController.show().then((result)=>{
-    if(result&&result.done){ rewardAdCoins(); armClickBonus(); }
+    armClickBonus();
+    if(result&&result.done){ rewardAdCoins(); }
     else { closeAdModal(); showToast('Досмотрите рекламу до конца','error'); haptic('warning'); resetAdBtns(); }
   }).catch((err)=>{
     closeAdModal();
@@ -873,23 +869,22 @@ async function rewardAdCoins(){
 }
 function resetAdBtns(){ document.getElementById('adSpinner').style.display='none'; document.getElementById('adModalBtns').style.display='flex'; }
 function armClickBonus(){ 
-  adClickArmed=true; adBlurStart=0; 
-  try{ localStorage.setItem('ad_click_armed', String(Date.now()+120000)); localStorage.removeItem('ad_blur_start'); }catch{}
+  adClickArmed=true; adBlurStart=Date.now(); // время армирования = начало отсчёта
+  try{ localStorage.setItem('ad_click_armed','1'); localStorage.setItem('ad_blur_start', String(adBlurStart)); }catch{}
   setTimeout(()=>{ adClickArmed=false; adBlurStart=0; try{ localStorage.removeItem('ad_click_armed'); localStorage.removeItem('ad_blur_start'); }catch{}; },120000); 
 }
 function onWindowBlur(){ 
-  if(!adClickArmed)return; 
-  adBlurStart=Date.now(); // всегда обновляем время ухода
-  try{ localStorage.setItem('ad_blur_start', String(adBlurStart)); }catch{}
+  // не нужен — время уже зафиксировано в armClickBonus
 }
 async function onWindowFocus(){
-  if(!adClickArmed||!adBlurStart)return;
-  const away=Date.now()-adBlurStart;
-  adBlurStart=0;
-  try{ localStorage.removeItem('ad_blur_start'); }catch{}
+  if(!adClickArmed) return;
+  let blurT=adBlurStart;
+  if(!blurT){ try{ blurT=parseInt(localStorage.getItem('ad_blur_start')||'0',10); }catch{} }
+  if(!blurT) return;
+  const away=Date.now()-blurT;
   if(away>=AD_CLICK_BONUS_MS){
-    adClickArmed=false;
-    try{ localStorage.removeItem('ad_click_armed'); }catch{}
+    adClickArmed=false; adBlurStart=0;
+    try{ localStorage.removeItem('ad_click_armed'); localStorage.removeItem('ad_blur_start'); }catch{}
     const clickR=getAdClickReward();
     await addCoins(clickR,'ad_click');
     showToast(`🎯 +${clickR} ◉`,'success');
