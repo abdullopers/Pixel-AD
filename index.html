@@ -7,7 +7,6 @@
 <meta name="description" content="AD Pixel — бонусы, рефералы и вывод TON прямо из Telegram.">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-<script src="//libtl.com/sdk.js" data-zone="10936851" data-sdk="show_10936851"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -498,70 +497,8 @@
   </div>
 </section>
 
-<section class="screen" id="taskScreen">
-  <div class="top-bar">
-    <button class="profile" onclick="openProfile()"><div class="avatar" id="topAvatar5">U</div><div class="profile-meta"><div class="profile-name" id="topName5">Гость</div><div class="profile-id" id="topId5">tap для ID</div></div></button>
-    <div class="coin-display"><span class="ic">◉</span><span id="taskCoins">0</span></div>
-  </div>
-  <div class="screen-title">Задания</div>
-  <div class="screen-sub">Смотрите рекламу от партнёров и получайте монеты на баланс.</div>
-  <div class="bonus-content">
-    <div class="info-banner"><span class="icon">💡</span><span>Награда начисляется только после полного просмотра рекламы.</span></div>
-
-    <div class="task-wrap">
-      <div class="task-header">
-        <div class="task-icon-wrap">🎬</div>
-        <div style="flex:1;min-width:0">
-          <div class="task-header-title">Реклама от партнёров</div>
-          <div class="task-header-sub">Monetag · ID 3315861</div>
-        </div>
-        <div class="task-reward-pill"><span>◉</span><span id="taskRewardPill">—</span></div>
-      </div>
-
-      <div id="monetagCard" style="padding:14px 14px 4px;display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--primary-soft),rgba(0,152,234,.06));border:1px solid rgba(0,122,255,.18);border-radius:var(--radius-md);padding:12px 14px">
-          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 6px 16px rgba(0,122,255,.30);flex:none">▶️</div>
-          <div style="min-width:0;flex:1">
-            <div style="font-weight:800;font-size:15px;color:var(--text);letter-spacing:-.2px">Просмотр рекламы</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">Короткий ролик · мгновенная награда</div>
-          </div>
-          <div style="font-weight:900;color:var(--primary);font-size:15px;white-space:nowrap">+<span id="monetagRewardVal">0</span> ◉</div>
-        </div>
-        <button class="btn btn-primary" id="monetagBtn" onclick="watchMonetagAd()" style="margin-top:2px">▶️ Смотреть рекламу</button>
-        <div id="monetagCooldown" style="text-align:center;font-size:12px;color:var(--muted);min-height:14px;font-weight:600"></div>
-      </div>
-
-      <div class="task-empty" id="taskEmpty">
-        <div class="task-empty-emoji">🗂️</div>
-        <div class="task-empty-title">Сейчас нет доступной рекламы</div>
-        <div class="task-empty-sub">Загляните чуть позже — реклама появляется регулярно.</div>
-        <button class="task-refresh-btn" onclick="refreshTask()">🔄 Обновить</button>
-      </div>
-
-      <div class="task-how">
-        <div class="task-how-title">Как это работает</div>
-        <div class="task-step"><div class="task-step-num">1</div><span>Нажмите «Смотреть рекламу»</span></div>
-        <div class="task-step"><div class="task-step-num">2</div><span>Досмотрите ролик до конца</span></div>
-        <div class="task-step"><div class="task-step-num">3</div><span>Получите монеты на баланс</span></div>
-      </div>
-
-      <div class="task-stats">
-        <div class="task-stat">
-          <div class="task-stat-label">Просмотрено</div>
-          <div class="task-stat-value" id="taskStatCount">0</div>
-        </div>
-        <div class="task-stat">
-          <div class="task-stat-label">Заработано</div>
-          <div class="task-stat-value"><span id="taskStatEarned">0</span><span style="color:var(--primary);font-size:16px">◉</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <nav class="nav-bar">
   <button class="nav-btn active" id="nav-bonus" onclick="showScreen('bonus')"><span class="nav-emoji emoji-gift"></span><span id="nav-bonus-label">Бонус</span></button>
-  <button class="nav-btn" id="nav-task" onclick="showScreen('task')"><span class="nav-emoji emoji-task"></span><span id="nav-task-label">Задания</span></button>
   <button class="nav-btn" id="nav-withdraw" onclick="showScreen('withdraw')"><span class="nav-emoji emoji-ton"></span><span id="nav-withdraw-label">Вывод</span></button>
   <button class="nav-btn" id="nav-ref" onclick="showScreen('ref')"><span class="nav-emoji emoji-people"></span><span id="nav-ref-label">Друзья</span></button>
   <button class="nav-btn" id="nav-support" onclick="showScreen('support')"><span class="nav-emoji emoji-headset"></span><span id="nav-support-label">Помощь</span></button>
@@ -754,9 +691,6 @@ async function loadState(){
       if(typeof d.refCount==='number')state.refCount=d.refCount;
       if(typeof d.refEarned==='number')state.refEarned=d.refEarned;
       if(typeof d.refCounted==='boolean')state.refCounted=d.refCounted;
-      if(typeof d.tasksCompleted==='number')state.tasksCompleted=d.tasksCompleted;
-      if(typeof d.tasksEarned==='number')state.tasksEarned=d.tasksEarned;
-      if(typeof d.lastMonetag==='number')state.lastMonetag=d.lastMonetag;
       // обновим имя/телеграм-id в случае если они изменились
       await db.collection('users').doc(userId).set({
         firstName: state.firstName, lastName: state.lastName, telegramId: state.telegramId
@@ -842,7 +776,7 @@ async function syncRefEarnings(silent=true){
 
 let toastTimer; function showToast(msg,type='info'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast '+type,2600); }
 
-const SCREEN_ORDER=['bonus','task','withdraw','ref','support'];
+const SCREEN_ORDER=['bonus','withdraw','ref','support'];
 let _currentScreen='bonus';
 function showScreen(name){
   haptic('light');
@@ -854,7 +788,6 @@ function showScreen(name){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const activate=(elId,navId,cb)=>{const el=document.getElementById(elId);el.classList.add('active',dirClass);document.getElementById(navId).classList.add('active');if(cb)cb();};
   if(name==='bonus'){activate('bonusScreen','nav-bonus',()=>{renderBonus(); syncRefEarnings(false).then(r=>{ if(r.credited) renderBonus(); });});}
-  else if(name==='task'){activate('taskScreen','nav-task',renderTask);}
   else if(name==='withdraw'){activate('withdrawScreen','nav-withdraw',()=>{renderWithdraw();switchTab('new'); syncRefEarnings(false).then(r=>{ if(r.credited) renderWithdraw(); });});}
   else if(name==='ref'){activate('refScreen','nav-ref',renderRef);}
   else if(name==='support'){activate('supportScreen','nav-support',()=>{ syncRefEarnings(true); });}
@@ -863,7 +796,7 @@ function showScreen(name){
 }
 
 function updateCoinDisplays(){
-  ['bonusCoins','withdrawCoins','refCoins','supportCoins','taskCoins','heroCoins'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=state.coins.toLocaleString();});
+  ['bonusCoins','withdrawCoins','refCoins','supportCoins','heroCoins'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=state.coins.toLocaleString();});
 }
 
 function renderBonus(){
@@ -961,8 +894,10 @@ function startWatchAd(){
     },600);
     return;
   }
+  // Армируем клик-бонус ДО показа рекламы — чтобы поймать момент,
+  // когда юзер во время ролика тапнет по баннеру и уйдёт в браузер рекламодателя.
+  armClickBonus();
   AdController.show().then((result)=>{
-    armClickBonus();
     if(result&&result.done){ rewardAdCoins(); }
     else { closeAdModal(); showToast('Досмотрите рекламу до конца','error'); haptic('warning'); resetAdBtns(); }
   }).catch((err)=>{
@@ -1322,124 +1257,6 @@ function toggleLang(){ lang=lang==='ru'?'en':'ru'; applyLang(); haptic('light');
 
 function toggleFaq(el){ el.classList.toggle('open'); haptic('light'); }
 
-/* ===== TASKS (Monetag Rewarded Popup) =====
-   Zone: 10936851 · SDK function: show_10936851('pop')
-   Награда = такая же, как за просмотр AdsGram-рекламы (getAdViewReward).
-   Кулдаун: MONETAG_COOLDOWN_MS. Защита от дублей через _lastTaskRewardAt. */
-const MONETAG_ZONE_FN = 'show_10936851';
-const MONETAG_COOLDOWN_MS = 15 * 1000;
-
-function getMonetagReward(){ return getAdViewReward(); }
-
-function setTaskEmpty(show){
-  const empty = document.getElementById('taskEmpty');
-  const card  = document.getElementById('monetagCard');
-  if(empty) empty.classList.toggle('show', !!show);
-  if(card)  card.style.display = show ? 'none' : 'flex';
-}
-
-function refreshTask(){
-  haptic('light');
-  setTaskEmpty(false);
-  updateTaskStats();
-  updateMonetagBtn();
-  showToast('🔄 Обновляем…','info');
-}
-
-function updateTaskStats(){
-  const c = document.getElementById('taskStatCount');
-  const e = document.getElementById('taskStatEarned');
-  if(c) c.textContent = (state.tasksCompleted||0).toLocaleString();
-  if(e) e.textContent = (state.tasksEarned||0).toLocaleString();
-  const reward = getMonetagReward();
-  const pill = document.getElementById('taskRewardPill');
-  if(pill) pill.textContent = reward;
-  const rv = document.getElementById('monetagRewardVal');
-  if(rv) rv.textContent = reward;
-}
-
-function updateMonetagBtn(){
-  const btn  = document.getElementById('monetagBtn');
-  const cool = document.getElementById('monetagCooldown');
-  if(!btn) return;
-  const now = Date.now();
-  const last = state.lastMonetag || 0;
-  const left = MONETAG_COOLDOWN_MS - (now - last);
-  if(left > 0){
-    btn.className = 'btn btn-disabled';
-    btn.disabled = true;
-    btn.textContent = '⏳ подождите';
-    if(cool) cool.textContent = `Снова через ${Math.ceil(left/1000)}с`;
-  } else {
-    btn.className = 'btn btn-primary';
-    btn.disabled = false;
-    btn.textContent = '▶️ Смотреть рекламу';
-    if(cool) cool.textContent = '';
-  }
-}
-
-let _monetagBusy = false;
-async function watchMonetagAd(){
-  if(_monetagBusy) return;
-  const now = Date.now();
-  const last = state.lastMonetag || 0;
-  if(now - last < MONETAG_COOLDOWN_MS){
-    const left = Math.ceil((MONETAG_COOLDOWN_MS - (now-last))/1000);
-    showToast(`Подождите ${left}с`,'error'); haptic('error'); return;
-  }
-  const fn = window[MONETAG_ZONE_FN];
-  if(typeof fn !== 'function'){
-    setTaskEmpty(true);
-    showToast('Реклама временно недоступна','error'); haptic('error');
-    return;
-  }
-  _monetagBusy = true;
-  haptic('light');
-  const btn = document.getElementById('monetagBtn');
-  if(btn){ btn.disabled = true; btn.className='btn btn-disabled'; btn.textContent='⏳ Загрузка…'; }
-  try{
-    await fn('pop');
-    // Защита от дублей
-    if(state._lastTaskRewardAt && (Date.now()-state._lastTaskRewardAt) < 1500){
-      _monetagBusy = false; updateMonetagBtn(); return;
-    }
-    state._lastTaskRewardAt = Date.now();
-    state.lastMonetag = Date.now();
-
-    const reward = getMonetagReward();
-    await addCoins(reward, 'task_monetag');
-
-    state.tasksCompleted = (state.tasksCompleted||0) + 1;
-    state.tasksEarned    = (state.tasksEarned||0) + reward;
-    try{
-      await db.collection('users').doc(userId).set({
-        tasksCompleted: state.tasksCompleted,
-        tasksEarned:    state.tasksEarned,
-        lastMonetag:    state.lastMonetag,
-        lastTaskRewardAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, {merge:true});
-    }catch(e){ console.warn('monetag stats save failed', e); }
-
-    showToast(`✅ +${reward} ◉ за просмотр!`, 'success');
-    haptic('success');
-    updateCoinDisplays();
-    updateTaskStats();
-  }catch(e){
-    console.warn('monetag ad error', e);
-    showToast('Реклама не показана','error'); haptic('error');
-  }finally{
-    _monetagBusy = false;
-    updateMonetagBtn();
-  }
-}
-
-function renderTask(){
-  updateCoinDisplays();
-  setTaskEmpty(false);
-  updateTaskStats();
-  updateMonetagBtn();
-}
-
 /* ===== WITHDRAWAL NUMBER ===== */
 async function getNextWithdrawalNumber(){
   const counterRef = db.collection('counters').doc('withdrawals');
@@ -1466,7 +1283,6 @@ window.addEventListener('load',async()=>{
   syncRefEarnings(false);
   setInterval(()=>{ syncRefEarnings(true); }, 30000);
   setInterval(()=>{ if(document.getElementById('bonusScreen').classList.contains('active'))renderBonus(); },1000);
-  setInterval(()=>{ if(document.getElementById('taskScreen').classList.contains('active'))updateMonetagBtn(); },1000);
 });
 </script>
 </body>
