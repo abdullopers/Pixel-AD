@@ -237,12 +237,44 @@
   .task-icon-wrap{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,rgba(0,122,255,.16),rgba(0,152,234,.10));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,122,255,.12)}
   .task-header-title{font-size:15px;font-weight:900;color:var(--text);letter-spacing:-.2px}
   .task-header-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
-  adsgram-task.adtask{display:block;width:100%}
-  .adtask [slot=reward]{font-size:20px;font-weight:900;color:var(--primary);letter-spacing:-.3px}
-  .adtask [slot=button]{display:flex;align-items:center;justify-content:center;padding:13px 18px;background:linear-gradient(180deg,var(--primary),var(--primary-2));color:#fff;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(0,122,255,.28);width:100%}
-  .adtask [slot=claim]{display:flex;align-items:center;justify-content:center;padding:13px 18px;background:linear-gradient(180deg,var(--success),#28a745);color:#fff;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(52,199,89,.28);width:100%;animation:pulse .9s ease-in-out infinite alternate}
+  .task-reward-pill{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(255,176,32,.18),rgba(255,176,32,.08));border:1px solid rgba(255,176,32,.35);color:#a76a00;font-weight:900;font-size:12px;padding:6px 11px;border-radius:999px;letter-spacing:-.2px;flex-shrink:0}
+
+  adsgram-task.adtask{display:block;width:100%;
+    --adsgram-task-font-size:15px;
+    --adsgram-task-icon-size:44px;
+    --adsgram-task-icon-title-gap:12px;
+    --adsgram-task-icon-border-radius:14px;
+    --adsgram-task-button-width:100%;
+  }
+  .adtask [slot=reward]{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:900;color:var(--primary);letter-spacing:-.2px;background:var(--primary-soft);border:1px solid rgba(0,122,255,.20);padding:5px 10px;border-radius:999px}
+  .adtask [slot=button]{display:flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;background:linear-gradient(180deg,var(--primary),var(--primary-2));color:#fff;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(0,122,255,.28);width:100%;letter-spacing:-.2px}
+  .adtask [slot=button]:active{transform:scale(.97)}
+  .adtask [slot=claim]{display:flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;background:linear-gradient(180deg,var(--success),#28a745);color:#fff;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(52,199,89,.32);width:100%;letter-spacing:-.2px;animation:claimPulse 1.2s ease-in-out infinite}
   @keyframes pulse{from{opacity:.85}to{opacity:1}}
-  .adtask [slot=done]{display:flex;align-items:center;justify-content:center;padding:13px 18px;background:rgba(52,199,89,.14);color:var(--success);border-radius:16px;font-size:15px;font-weight:800;width:100%;border:1.5px solid rgba(52,199,89,.3)}
+  @keyframes claimPulse{0%,100%{box-shadow:0 8px 22px rgba(52,199,89,.32)}50%{box-shadow:0 8px 30px rgba(52,199,89,.55)}}
+  .adtask [slot=done]{display:flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;background:rgba(52,199,89,.14);color:var(--success);border-radius:16px;font-size:15px;font-weight:800;width:100%;border:1.5px solid rgba(52,199,89,.3);letter-spacing:-.2px}
+
+  /* How it works steps */
+  .task-how{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .task-how-title{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
+  .task-step{display:flex;align-items:center;gap:11px;font-size:13.5px;font-weight:600;color:var(--text-2);line-height:1.35}
+  .task-step-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;box-shadow:0 4px 10px rgba(0,122,255,.25)}
+
+  /* Stats row */
+  .task-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .task-stat{background:var(--card-strong);border:1px solid var(--border);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow-sm);backdrop-filter:blur(18px)}
+  .task-stat-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+  .task-stat-value{font-size:20px;font-weight:900;color:var(--text);letter-spacing:-.5px;margin-top:3px;display:flex;align-items:center;gap:5px}
+
+  /* Empty state */
+  .task-empty{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 18px;text-align:center}
+  .task-empty.show{display:flex}
+  .task-empty-emoji{font-size:42px;opacity:.85}
+  .task-empty-title{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px}
+  .task-empty-sub{font-size:13px;color:var(--muted);font-weight:500;line-height:1.4;max-width:280px}
+  .task-refresh-btn{margin-top:6px;display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--primary-soft);border:1.5px solid rgba(0,122,255,.22);color:var(--primary-2);border-radius:14px;font-size:13px;font-weight:800;cursor:pointer}
+  .task-refresh-btn:active{background:rgba(0,122,255,.18)}
+  .adtask.hidden{display:none!important}
 
   ::-webkit-scrollbar{width:0;height:0}
 
@@ -471,23 +503,51 @@
     <div class="coin-display"><span class="ic">◉</span><span id="taskCoins">0</span></div>
   </div>
   <div class="screen-title">Задания</div>
-  <div class="screen-sub">Выполняйте задания и получайте монеты.</div>
+  <div class="screen-sub">Подпишитесь на канал или откройте мини-приложение и получите монеты на баланс.</div>
   <div class="bonus-content">
-    <div class="info-banner"><span class="icon">💡</span><span>Нажмите кнопку, выполните задание и получите монеты на баланс.</span></div>
+    <div class="info-banner"><span class="icon">💡</span><span>Награда начисляется только после реального выполнения задания.</span></div>
+
     <div class="task-wrap">
       <div class="task-header">
         <div class="task-icon-wrap">✅</div>
-        <div>
-          <div class="task-header-title">Задание от партнёра</div>
-          <div class="task-header-sub">Tier-1: 300 ◉ · Tier-2/3: 250 ◉</div>
+        <div style="flex:1;min-width:0">
+          <div class="task-header-title">Активное задание</div>
+          <div class="task-header-sub">От партнёров AdsGram</div>
         </div>
+        <div class="task-reward-pill"><span>◉</span><span id="taskRewardPill">—</span></div>
       </div>
-      <adsgram-task class="adtask" id="adsgramTask" data-block-id="task-28822" data-debug="false">
-        <span slot="reward" id="taskRewardSlot">250 ◉</span>
+
+      <adsgram-task class="adtask" id="adsgramTask" data-block-id="task-28822" data-debug="false" data-debug-console="false">
+        <span slot="reward" id="taskRewardSlot">◉</span>
         <div slot="button">▶️ Выполнить задание</div>
         <div slot="claim">🎁 Получить награду</div>
         <div slot="done">✅ Задание выполнено</div>
       </adsgram-task>
+
+      <div class="task-empty" id="taskEmpty">
+        <div class="task-empty-emoji">🗂️</div>
+        <div class="task-empty-title">Сейчас нет доступных заданий</div>
+        <div class="task-empty-sub">Загляните чуть позже — новые задания появляются регулярно.</div>
+        <button class="task-refresh-btn" onclick="refreshTask()">🔄 Обновить</button>
+      </div>
+
+      <div class="task-how">
+        <div class="task-how-title">Как это работает</div>
+        <div class="task-step"><div class="task-step-num">1</div><span>Нажмите «Выполнить задание»</span></div>
+        <div class="task-step"><div class="task-step-num">2</div><span>Подпишитесь на канал или откройте мини-приложение</span></div>
+        <div class="task-step"><div class="task-step-num">3</div><span>Вернитесь и нажмите «Получить награду»</span></div>
+      </div>
+
+      <div class="task-stats">
+        <div class="task-stat">
+          <div class="task-stat-label">Выполнено</div>
+          <div class="task-stat-value" id="taskStatCount">0</div>
+        </div>
+        <div class="task-stat">
+          <div class="task-stat-label">Заработано</div>
+          <div class="task-stat-value"><span id="taskStatEarned">0</span><span style="color:var(--primary);font-size:16px">◉</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1246,24 +1306,102 @@ function toggleLang(){ lang=lang==='ru'?'en':'ru'; applyLang(); haptic('light');
 
 function toggleFaq(el){ el.classList.toggle('open'); haptic('light'); }
 
-/* ===== TASKS (Adsgram) ===== */
-const TASK_REWARD = { 1:300, 2:250, 3:250 };
+/* ===== TASKS (Adsgram) =====
+   Награда начисляется ТОЛЬКО по событию `reward` (после реального выполнения задания).
+   Сумма берётся из event.detail.reward (приходит с сервера AdsGram, настраивается в кабинете),
+   с fallback на TIER_CONFIG, если по какой-то причине detail пустой.
+   Защита от дублей: lastTaskRewardAt в state + 1500 мс throttle. */
+const TASK_REWARD_FALLBACK = { 1:300, 2:250, 3:250 };
+function getFallbackTaskReward(){ return TASK_REWARD_FALLBACK[userTier] || 250; }
+
+function setTaskEmpty(show){
+  const empty = document.getElementById('taskEmpty');
+  const el = document.getElementById('adsgramTask');
+  if(empty) empty.classList.toggle('show', !!show);
+  if(el) el.classList.toggle('hidden', !!show);
+}
+
+function refreshTask(){
+  haptic('light');
+  setTaskEmpty(false);
+  const old = document.getElementById('adsgramTask');
+  if(!old) return;
+  // Пересоздаём web-component, чтобы AdsGram запросил новое задание
+  const fresh = document.createElement('adsgram-task');
+  for(const a of old.attributes) fresh.setAttribute(a.name, a.value);
+  fresh.innerHTML = old.innerHTML;
+  old.parentNode.replaceChild(fresh, old);
+  attachTaskListeners(fresh);
+  showToast('🔄 Обновляем задания…','info');
+}
+
+function updateTaskStats(){
+  const c = document.getElementById('taskStatCount');
+  const e = document.getElementById('taskStatEarned');
+  if(c) c.textContent = (state.tasksCompleted||0).toLocaleString();
+  if(e) e.textContent = (state.tasksEarned||0).toLocaleString();
+  const pill = document.getElementById('taskRewardPill');
+  if(pill) pill.textContent = getFallbackTaskReward();
+}
+
+function attachTaskListeners(el){
+  if(!el || el._rewardListened) return;
+  el._rewardListened = true;
+
+  el.addEventListener('reward', async (event)=>{
+    // Защита от дублей по времени
+    const now = Date.now();
+    if(state._lastTaskRewardAt && (now - state._lastTaskRewardAt) < 1500){
+      console.warn('Task reward duplicate ignored');
+      return;
+    }
+    state._lastTaskRewardAt = now;
+
+    // Берём награду из ответа AdsGram, иначе fallback
+    let taskR = getFallbackTaskReward();
+    try{
+      const detail = event && event.detail;
+      if(detail){
+        if(typeof detail === 'number' && detail > 0) taskR = detail;
+        else if(typeof detail === 'object'){
+          if(typeof detail.reward === 'number' && detail.reward > 0) taskR = detail.reward;
+          else if(typeof detail.amount === 'number' && detail.amount > 0) taskR = detail.amount;
+        }
+      }
+    }catch(e){}
+
+    await addCoins(taskR, 'task');
+
+    // Статистика
+    state.tasksCompleted = (state.tasksCompleted||0) + 1;
+    state.tasksEarned = (state.tasksEarned||0) + taskR;
+    try{
+      await db.collection('users').doc(String(state.userId)).set({
+        tasksCompleted: state.tasksCompleted,
+        tasksEarned: state.tasksEarned,
+        lastTaskRewardAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+    }catch(e){ console.warn('task stats save failed', e); }
+
+    showToast(`✅ +${taskR} ◉ за задание!`, 'success');
+    haptic('success');
+    updateCoinDisplays();
+    updateTaskStats();
+  });
+
+  el.addEventListener('onBannerNotFound', ()=>{ setTaskEmpty(true); });
+  el.addEventListener('onError', ()=>{ setTaskEmpty(true); showToast('Нет доступных заданий','error'); });
+  el.addEventListener('onTooLongSession', ()=>{ showToast('Перезапустите приложение для новых заданий','error'); });
+}
+
 function renderTask(){
   updateCoinDisplays();
-  const r = TASK_REWARD[userTier] || 250;
+  setTaskEmpty(false);
+  updateTaskStats();
   const slot = document.getElementById('taskRewardSlot');
-  if(slot) slot.textContent = r + ' ◉';
+  if(slot) slot.textContent = '◉';
   const el = document.getElementById('adsgramTask');
-  if(el && !el._rewardListened){
-    el._rewardListened = true;
-    el.addEventListener('reward', async ()=>{
-      const taskR = TASK_REWARD[userTier] || 250;
-      await addCoins(taskR, 'task');
-      showToast(`✅ +${taskR} ◉ за задание!`, 'success');
-      haptic('success'); updateCoinDisplays();
-    });
-    el.addEventListener('onError', ()=>{ showToast('Нет заданий, попробуйте позже','error'); });
-  }
+  attachTaskListeners(el);
 }
 
 /* ===== WITHDRAWAL NUMBER ===== */
