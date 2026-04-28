@@ -229,6 +229,20 @@
   .emoji-link::before{content:'🔗'}
   .emoji-headset::before{content:'🎧'}
   .emoji-channel::before{content:'📣'}
+  .emoji-task::before{content:'✅'}
+
+  /* === TASKS === */
+  .task-wrap{background:var(--card-strong);border:1px solid var(--border);border-radius:var(--radius-xl);padding:14px 14px 16px;box-shadow:var(--shadow-glass);backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);overflow:hidden}
+  .task-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .task-icon-wrap{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,rgba(0,122,255,.16),rgba(0,152,234,.10));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,122,255,.12)}
+  .task-header-title{font-size:15px;font-weight:900;color:var(--text);letter-spacing:-.2px}
+  .task-header-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+  adsgram-task.adtask{display:block;width:100%}
+  .adtask [slot=reward]{font-size:20px;font-weight:900;color:var(--primary);letter-spacing:-.3px}
+  .adtask [slot=button]{display:flex;align-items:center;justify-content:center;padding:13px 18px;background:linear-gradient(180deg,var(--primary),var(--primary-2));color:#fff;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(0,122,255,.28);width:100%}
+  .adtask [slot=claim]{display:flex;align-items:center;justify-content:center;padding:13px 18px;background:linear-gradient(180deg,var(--success),#28a745);color:#fff;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(52,199,89,.28);width:100%;animation:pulse .9s ease-in-out infinite alternate}
+  @keyframes pulse{from{opacity:.85}to{opacity:1}}
+  .adtask [slot=done]{display:flex;align-items:center;justify-content:center;padding:13px 18px;background:rgba(52,199,89,.14);color:var(--success);border-radius:16px;font-size:15px;font-weight:800;width:100%;border:1.5px solid rgba(52,199,89,.3)}
 
   ::-webkit-scrollbar{width:0;height:0}
 
@@ -451,8 +465,36 @@
   </div>
 </section>
 
+<section class="screen" id="taskScreen">
+  <div class="top-bar">
+    <button class="profile" onclick="openProfile()"><div class="avatar" id="topAvatar5">U</div><div class="profile-meta"><div class="profile-name" id="topName5">Гость</div><div class="profile-id" id="topId5">tap для ID</div></div></button>
+    <div class="coin-display"><span class="ic">◉</span><span id="taskCoins">0</span></div>
+  </div>
+  <div class="screen-title">Задания</div>
+  <div class="screen-sub">Выполняйте задания и получайте монеты.</div>
+  <div class="bonus-content">
+    <div class="info-banner"><span class="icon">💡</span><span>Нажмите кнопку, выполните задание и получите монеты на баланс.</span></div>
+    <div class="task-wrap">
+      <div class="task-header">
+        <div class="task-icon-wrap">✅</div>
+        <div>
+          <div class="task-header-title">Задание от партнёра</div>
+          <div class="task-header-sub">Tier-1: 300 ◉ · Tier-2/3: 250 ◉</div>
+        </div>
+      </div>
+      <adsgram-task class="adtask" id="adsgramTask" data-block-id="task-28822" data-debug="false">
+        <span slot="reward" id="taskRewardSlot">250 ◉</span>
+        <div slot="button">▶️ Выполнить задание</div>
+        <div slot="claim">🎁 Получить награду</div>
+        <div slot="done">✅ Задание выполнено</div>
+      </adsgram-task>
+    </div>
+  </div>
+</section>
+
 <nav class="nav-bar">
   <button class="nav-btn active" id="nav-bonus" onclick="showScreen('bonus')"><span class="nav-emoji emoji-gift"></span><span id="nav-bonus-label">Бонус</span></button>
+  <button class="nav-btn" id="nav-task" onclick="showScreen('task')"><span class="nav-emoji emoji-task"></span><span id="nav-task-label">Задания</span></button>
   <button class="nav-btn" id="nav-withdraw" onclick="showScreen('withdraw')"><span class="nav-emoji emoji-ton"></span><span id="nav-withdraw-label">Вывод</span></button>
   <button class="nav-btn" id="nav-ref" onclick="showScreen('ref')"><span class="nav-emoji emoji-people"></span><span id="nav-ref-label">Друзья</span></button>
   <button class="nav-btn" id="nav-support" onclick="showScreen('support')"><span class="nav-emoji emoji-headset"></span><span id="nav-support-label">Помощь</span></button>
@@ -558,9 +600,9 @@ function applyProfileUI(){
   const idLabel=tgUser?.id ? ('id '+tgUser.id) : 'нажми, чтобы открыть';
   const initial=(name[0]||'U').toUpperCase();
   const photo=tgUser?.photo_url;
-  ['topName','topName2','topName3','topName4'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
-  ['topId','topId2','topId3','topId4'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=idLabel;});
-  ['topAvatar','topAvatar2','topAvatar3','topAvatar4'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.innerHTML=photo?`<img src="${photo}" alt="">`:initial;});
+  ['topName','topName2','topName3','topName4','topName5'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
+  ['topId','topId2','topId3','topId4','topId5'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=idLabel;});
+  ['topAvatar','topAvatar2','topAvatar3','topAvatar4','topAvatar5'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.innerHTML=photo?`<img src="${photo}" alt="">`:initial;});
 }
 
 function openProfile(){
@@ -730,7 +772,7 @@ async function syncRefEarnings(silent=true){
 
 let toastTimer; function showToast(msg,type='info'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast '+type,2600); }
 
-const SCREEN_ORDER=['bonus','withdraw','ref','support'];
+const SCREEN_ORDER=['bonus','task','withdraw','ref','support'];
 let _currentScreen='bonus';
 function showScreen(name){
   haptic('light');
@@ -742,6 +784,7 @@ function showScreen(name){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const activate=(elId,navId,cb)=>{const el=document.getElementById(elId);el.classList.add('active',dirClass);document.getElementById(navId).classList.add('active');if(cb)cb();};
   if(name==='bonus'){activate('bonusScreen','nav-bonus',()=>{renderBonus(); syncRefEarnings(false).then(r=>{ if(r.credited) renderBonus(); });});}
+  else if(name==='task'){activate('taskScreen','nav-task',renderTask);}
   else if(name==='withdraw'){activate('withdrawScreen','nav-withdraw',()=>{renderWithdraw();switchTab('new'); syncRefEarnings(false).then(r=>{ if(r.credited) renderWithdraw(); });});}
   else if(name==='ref'){activate('refScreen','nav-ref',renderRef);}
   else if(name==='support'){activate('supportScreen','nav-support',()=>{ syncRefEarnings(true); });}
@@ -750,7 +793,7 @@ function showScreen(name){
 }
 
 function updateCoinDisplays(){
-  ['bonusCoins','withdrawCoins','refCoins','supportCoins','heroCoins'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=state.coins.toLocaleString();});
+  ['bonusCoins','withdrawCoins','refCoins','supportCoins','taskCoins','heroCoins'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=state.coins.toLocaleString();});
 }
 
 function renderBonus(){
@@ -946,7 +989,7 @@ async function loadHistory(){
             <div style="display:flex;align-items:center;gap:10px;min-width:0">
               <div class="ic-wrap" style="flex:none">💎</div>
               <div style="min-width:0">
-                <div style="font-weight:800;font-size:15px;color:var(--text);white-space:nowrap">${(d.coins||0).toLocaleString()} ◉ → ${tonAmt} TON</div>
+                <div style="font-weight:800;font-size:15px;color:var(--text);white-space:nowrap">${d.number?fmtNum(d.number)+' · ':''}${(d.coins||0).toLocaleString()} ◉ → ${tonAmt} TON</div>
                 <div style="font-size:12px;color:var(--muted);margin-top:2px">${dtStr}</div>
               </div>
             </div>
@@ -979,9 +1022,11 @@ async function submitWithdraw(){
   const coins=state.coins;
   const ton=coinsToTon(coins);
   const nowStr=new Date().toLocaleString('ru-RU');
+  const wNum = await getNextWithdrawalNumber();
   const wDoc={
     userId, telegramId:tgId, username, firstName, lastName,
     coins, ton, wallet, reason:reason||'', status:'pending',
+    number: wNum,
     ip: userIp||'неизвестно',
     country: userCountry||'',
     device: userDevice||navigator.userAgent.slice(0,80),
@@ -992,6 +1037,7 @@ async function submitWithdraw(){
   try{wRef=await db.collection('withdrawals').add(wDoc);}catch(e){console.error('save withdrawal',e);}
   const msg=
     `💎 *AD Pixel — заявка на вывод TON*\n\n`+
+    (wNum?`🔢 Заявка: *${fmtNum(wNum)}*\n`:'')+
     `👤 ${firstName} ${lastName}\n`+
     `🆔 \`${tgId}\`  ${username}\n\n`+
     `💰 *${coins.toLocaleString()} ◉* → *${fmtTon(ton)} TON*\n`+
@@ -1199,6 +1245,41 @@ function applyLang(){
 function toggleLang(){ lang=lang==='ru'?'en':'ru'; applyLang(); haptic('light'); if(document.getElementById('refScreen').classList.contains('active'))loadRefFriends(); }
 
 function toggleFaq(el){ el.classList.toggle('open'); haptic('light'); }
+
+/* ===== TASKS (Adsgram) ===== */
+const TASK_REWARD = { 1:300, 2:250, 3:250 };
+function renderTask(){
+  updateCoinDisplays();
+  const r = TASK_REWARD[userTier] || 250;
+  const slot = document.getElementById('taskRewardSlot');
+  if(slot) slot.textContent = r + ' ◉';
+  const el = document.getElementById('adsgramTask');
+  if(el && !el._rewardListened){
+    el._rewardListened = true;
+    el.addEventListener('reward', async ()=>{
+      const taskR = TASK_REWARD[userTier] || 250;
+      await addCoins(taskR, 'task');
+      showToast(`✅ +${taskR} ◉ за задание!`, 'success');
+      haptic('success'); updateCoinDisplays();
+    });
+    el.addEventListener('onError', ()=>{ showToast('Нет заданий, попробуйте позже','error'); });
+  }
+}
+
+/* ===== WITHDRAWAL NUMBER ===== */
+async function getNextWithdrawalNumber(){
+  const counterRef = db.collection('counters').doc('withdrawals');
+  try{
+    let num = 1;
+    await db.runTransaction(async tx=>{
+      const snap = await tx.get(counterRef);
+      num = snap.exists ? (snap.data().next||1) : 1;
+      tx.set(counterRef, {next: num+1});
+    });
+    return num;
+  }catch(e){ console.error('counter',e); return null; }
+}
+function fmtNum(n){ return n ? '#'+String(n).padStart(4,'0') : ''; }
 
 window.addEventListener('load',async()=>{
   applyProfileUI();
